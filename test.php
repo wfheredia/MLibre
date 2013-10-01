@@ -10,7 +10,7 @@
 require("mlibre/mlibre.php");
 
 $ml = new MLibre();
-print_r($ml->sitio());
+$ml->debug($ml->categoria("MLA1953"));
 
 ?>
 </body>

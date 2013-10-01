@@ -1,8 +1,10 @@
 ﻿<?php
-
-
-
-
+/** ************************************************************************************************
+ * 
+ * 
+ *  Autor: Wilian F. Heredia 
+ * **************************************************************************************************
+ **/
 
 class MLibre {
 	// Url de api 
@@ -23,7 +25,7 @@ class MLibre {
 								'method'=>"GET",
 								'header'=> "User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20100101 Firefox/14.0.1\r\n
 								Accept: text/html,application/xhtml+xml,application/xml,application/json;q=0.9,*/*;q=0.8\r\n
-								Accept-Language: es-es,es;q=0.8,en-us;q=0.5,en;q=0.3\r\n	
+								Accept-Language: es-es,es;q=0.8,en-us;q=0.5,en;q=0.3\r\n
 								Content-Type: application/json; charset=UTF-8
 								Connection: keep-alive\r\n"
 							  )
@@ -31,8 +33,9 @@ class MLibre {
 							
 	
 	
-	public function __construct($idSitie = null) {
-		$this->Inicializar($idSitie);
+	public function __construct($idSitio = null,$salidaComoArreglo = false) {
+		$this->comoArreglo = $salidaComoArreglo;
+		$this->Inicializar($idSitio);
 	}
 	
 	/** Inicializa las variables por defecto en el constructor 
@@ -41,9 +44,7 @@ class MLibre {
 		if($idSitie != null){
 			$this->siteId = $idSitie;			
 		}		
-		$this->infoSitio = $this->sitio($this->siteId);	
-		
-		$this->debag($this->infoSitio);
+		$this->infoSitio = $this->sitio($this->siteId);			
 	}
 	
 	/**  Carga el sitio con el que va a trabajar la clase, si decidimos 
@@ -60,7 +61,7 @@ class MLibre {
 	}
 	
 	/**  Recupera la información de un sitio (de algún pais) 
-	* SSi no tiene parámetro toma el seteado por defecto  en la clase 
+	* Si no tiene parámetro toma el seteado por defecto  en la clase 
 	* que por defecto es MLA (argentina) */
 	public function sitio($id = null){		
 		if($id != null){
@@ -73,37 +74,66 @@ class MLibre {
 	/** Devuelve la principales categoría del sitio, en caso de pasar parámetro el 
 	ID del sitio busca las del sitio seleccionado, si no se le pasa parámetro este 
 	devuelve el del sitio cargado en la clase  */	
-	public function categoriaDelSitio($id = null)
+	private function categoriaDelSitio($id = null)
 	{
 		if($id != null){
 			return $this->abrirUrl("/sites/".$id."/categories");
 		} else {
-			return $this->infoSitio->categories;
+			if($this->comoArreglo)
+			{
+				return $this->infoSitio["categories"];
+			}else{
+				return $this->infoSitio->categories;
+			}			
 		}	
 	}
 	
 	
 	/** Devuelve la información de la categoría con las subcategorías asociadas si es que tiene 
-		Se le pasa el id de una categoría o subcategoría  */	
-	public function categoria($idCategoria)
+		Se le pasa el id de una categoría o subcategoría, 
+        si no se le pasa un balor este devuelve las categorias generales   */	
+	public function categoria($idCategoria = "")
 	{
-		if(array_key_exists($idCategoria, $this->categoria) != false){  // 4.0.7 
-			return $this->categoria[$idCategoria] = $this->abrirUrl("/categories/".$idCategoria);
-		} else {
-
+		$long_Categoria = strlen($idCategoria);
+		if(($idCategoria != "") OR ($long_Categoria > 4)){ // Devuelve la información de la categoría con las subcategorías
+			if(array_key_exists($idCategoria, $this->categoria) != false){  // 4.0.7 
+				return $this->categoria[$idCategoria] = $this->abrirUrl("/categories/".$idCategoria);
+			} else {		
+				return $this->categoria[$idCategoria];
+			}
+		} else { // devuelve las categorias generales del sitio seteado en la clase
+			if(($long_Categoria < 4) and ($idCategoria != ""))
+			{
+				return $this->categoriaDelSitio($idCategoria);
+			}else{
+				return $this->categoriaDelSitio();
+			}			
 		}
 	}
 	
 	
 	/** Esta función se encarga de hacer las peticiones (GET) básicas */	
-	public function abrirUrl($parametroUrl){
-	
+	private function abrirUrl($parametroUrl){
 		$contexto = stream_context_create($this->headerSend);
 		$contenido = file_get_contents($this->sitioAPI.$parametroUrl, false, $contexto);
+		//echo $contenido."\n";
 		return json_decode($contenido,$this->comoArreglo);	
-	}
+	} 
 	
-	public function debag($var){
+	/* a implementar en el futuro 
+	public function abrirUrl($parametroUrl){		
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+		curl_setopt($ch, CURLOPT_HEADER, false);
+		curl_setopt($ch, CURLOPT_URL, $parametroUrl);
+		curl_setopt($ch, CURLOPT_SSLVERSION,3); 
+		$result = curl_exec($ch);
+		curl_close($ch);
+		print_r($result);
+		return json_decode($result,$this->comoArreglo);	
+	}*/
+	
+	public function debug($var){
 		echo "<PRE>";
 		print_r($var);
 		echo "</PRE>";		
